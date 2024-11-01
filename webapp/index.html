@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Go Pong</title>
+    <style>
+        canvas {
+            display: block;
+            margin: 0 auto;
+            border: 1px solid black;
+        }
+        html, body {
+            overflow: hidden; /* Prevent scrolling */
+            height: 100%;     /* Ensure full viewport usage */
+            margin: 0;        /* Remove default margin */
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <script src="wasm_exec.js"></script>
+    
+
+    <script>
+        const go = new Go();
+    
+        // Store key states for Arrow Keys (pressed or not)
+        window.keysPressed = {
+            ArrowUp: false,
+            ArrowDown: false
+        };
+        // Capture keydown event
+        window.addEventListener("keydown", function (e) {
+            if (e.code === "ArrowUp" || e.code === "ArrowDown") {
+                keysPressed[e.code] = true;  // Mark key as pressed
+            }
+        });
+    
+        // Capture keyup event
+        window.addEventListener("keyup", function (e) {
+            if (e.code === "ArrowUp" || e.code === "ArrowDown") {
+                keysPressed[e.code] = false;  // Mark key as released
+            }
+        });
+    
+        // Initialize WebAssembly
+        WebAssembly.instantiateStreaming(fetch("pong.wasm"), go.importObject)
+            .then((result) => {
+                console.log("WASM instantiated successfully!");
+                go.run(result.instance);
+            })
+            .catch((err) => {
+                console.error("Failed to instantiate WebAssembly:", err);
+            });
+    </script>
+</body>
+</html>
