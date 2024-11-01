@@ -3,6 +3,7 @@ package main
 import (
     "syscall/js"
     "math"
+    "math/rand"
     "time"
 )
 
@@ -91,18 +92,19 @@ func updateGame() {
     }
 
     // Ball collision with player 1's paddle
-    // Check if the ball is within the X range (player1X to player1X + paddleWidth)
-    // AND within the Y range (player1Y - paddleHeight/2 to player1Y + paddleHeight / 2)
-    if game.ballX-ballSize <= game.player1X + paddleWidth && game.ballX+ballSize >= game.player1X {
+    if game.ballX-ballSize <= game.player1X+paddleWidth && game.ballX+ballSize >= game.player1X {
         if game.ballY >= game.player1Y-paddleHeight/2 && game.ballY <= game.player1Y+paddleHeight/2 {
             game.ballVelX = -game.ballVelX
+
+            // Add spin/bounce variation based on where it hits the paddle
+            game.ballVelY += (game.ballY - game.player1Y) * 0.05  // Fine-tune this effect
         }
     }
 
     // Ball collision with player 2's (AI) paddle
-    if game.ballX+ballSize >= canvasWidth-paddleWidth {
+    if game.ballX+ballSize >= canvasWidth-paddleWidth && game.ballX-ballSize <= canvasWidth { // Right side collision check
         if game.ballY >= game.player2Y-paddleHeight/2 && game.ballY <= game.player2Y+paddleHeight/2 {
-            game.ballVelX = -game.ballVelX
+            game.ballVelX = -game.ballVelX // Bounce the ball back
         }
     }
 
@@ -125,18 +127,26 @@ func updateGame() {
         game.player1X = canvasWidth/2 - paddleWidth
     }
 
-    // Update player 2 AI (only Y-axis movement, unchanged)
-    if math.Abs(game.ballY-game.player2Y) > playerSpeed {
-        if game.ballY > game.player2Y {
-            game.player2Y += playerSpeed
-        } else {
-            game.player2Y -= playerSpeed
+    // Update player 2 AI paddle movement with randomness (only Y)
+    // Introduce randomness to AI movements
+    randomFactor := rand.Float64() * 2  // Full randomness factor
+    aiSpeed := playerSpeed * 0.7 * randomFactor  // AI will be slower than player
+
+    // AI reaction delay (set it to 1 to make the AI react immediately)
+    reactionDelay := 1  
+    if rand.Intn(reactionDelay) == 0 {  
+        if math.Abs(game.ballY - game.player2Y) > aiSpeed {
+            if game.ballY > game.player2Y {
+                game.player2Y += aiSpeed
+            } else {
+                game.player2Y -= aiSpeed
+            }
         }
     }
 
-    // Check scoring/reset (same as before)
+    // Check scoring/reset
     if game.ballX+ballSize >= canvasWidth || game.ballX-ballSize <= 0 {
-        initGame()  // Reset game
+        initGame()  // Reset game if the ball hits the right or left boundaries
     }
 }
 
@@ -166,6 +176,7 @@ func gameLoop() {
 
 // Entry point
 func main() {
+    rand.Seed(time.Now().UnixNano()) // Seed randomness with current time
     // Set up the canvas context
     doc := js.Global().Get("document")
     canvas := doc.Call("getElementById", "gameCanvas")
