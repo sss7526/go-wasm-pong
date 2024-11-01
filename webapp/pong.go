@@ -91,7 +91,9 @@ func updateGame() {
     }
 
     // Ball collision with player 1's paddle
-    if game.ballX-ballSize <= paddleWidth {
+    // Check if the ball is within the X range (player1X to player1X + paddleWidth)
+    // AND within the Y range (player1Y - paddleHeight/2 to player1Y + paddleHeight / 2)
+    if game.ballX-ballSize <= game.player1X + paddleWidth && game.ballX+ballSize >= game.player1X {
         if game.ballY >= game.player1Y-paddleHeight/2 && game.ballY <= game.player1Y+paddleHeight/2 {
             game.ballVelX = -game.ballVelX
         }
