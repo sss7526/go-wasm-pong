@@ -20,7 +20,8 @@ const (
 type Game struct {
     ballX, ballY      float64
     ballVelX, ballVelY float64
-    player1Y, player2Y float64
+    player1X, player1Y float64
+    player2Y float64
 }
 
 var game = Game{
@@ -28,6 +29,7 @@ var game = Game{
     ballY:   canvasHeight / 2,
     ballVelX: ballSpeed,
     ballVelY: ballSpeed,
+    player1X: 0,
     player1Y: canvasHeight / 2,
     player2Y: canvasHeight / 2,
 }
@@ -45,35 +47,41 @@ func initGame() {
     game.player2Y = canvasHeight / 2
 }
 
-// Poll the key inputs from JavaScript
-func getKeyInput() float64 {
-    // Get the window object
+func getKeyInput() (float64, float64) {
+    // Get the global window object
     window := js.Global()
 
-    // Access the keysPressed object
+    // Ensure keysPressed exists
     keysPressed := window.Get("keysPressed")
     if keysPressed.IsUndefined() {
-        return 0 // No input for this frame
+        return 0, 0 // No input for this frame
     }
 
+    // Y-axis movement (up/down)
     yDirection := 0.0
-
-    // If ArrowUp is pressed, move up
     if keysPressed.Get("ArrowUp").Bool() {
         yDirection = -playerSpeed
     }
-
-    // If ArrowDown is pressed, move down
     if keysPressed.Get("ArrowDown").Bool() {
         yDirection = playerSpeed
     }
 
-    return yDirection
+    // X-axis movement (left/right)
+    xDirection := 0.0
+    if keysPressed.Get("ArrowLeft").Bool() {
+        xDirection = -playerSpeed
+    }
+    if keysPressed.Get("ArrowRight").Bool() {
+        xDirection = playerSpeed
+    }
+
+    // Return both X-axis and Y-axis direction
+    return xDirection, yDirection
 }
 
 // Game logic - called every frame
 func updateGame() {
-    // Ball movement
+    // Ball movement (same as before)
     game.ballX += game.ballVelX
     game.ballY += game.ballVelY
 
@@ -82,21 +90,24 @@ func updateGame() {
         game.ballVelY = -game.ballVelY
     }
 
-    // Ball collision with player paddles
+    // Ball collision with player 1's paddle
     if game.ballX-ballSize <= paddleWidth {
         if game.ballY >= game.player1Y-paddleHeight/2 && game.ballY <= game.player1Y+paddleHeight/2 {
             game.ballVelX = -game.ballVelX
         }
     }
+
+    // Ball collision with player 2's (AI) paddle
     if game.ballX+ballSize >= canvasWidth-paddleWidth {
         if game.ballY >= game.player2Y-paddleHeight/2 && game.ballY <= game.player2Y+paddleHeight/2 {
             game.ballVelX = -game.ballVelX
         }
     }
 
-    // Player 1 (user) paddle movement based on key input
-    direction := getKeyInput()
-    game.player1Y += direction
+    // Player 1 (user) paddle movement (horizontal and vertical)
+    xDir, yDir := getKeyInput()
+    game.player1Y += yDir
+    game.player1X += xDir // Allow player 1 to move left/right
 
     // Clamp player 1's paddle within the screen bounds
     if game.player1Y-paddleHeight/2 < 0 {
@@ -105,7 +116,14 @@ func updateGame() {
         game.player1Y = canvasHeight - paddleHeight/2
     }
 
-    // Update player 2 AI (automatic movement)
+    // Clamp player 1's X position (left side to middle of the screen)
+    if game.player1X < 0 {
+        game.player1X = 0
+    } else if game.player1X+paddleWidth > canvasWidth/2 {
+        game.player1X = canvasWidth/2 - paddleWidth
+    }
+
+    // Update player 2 AI (only Y-axis movement, unchanged)
     if math.Abs(game.ballY-game.player2Y) > playerSpeed {
         if game.ballY > game.player2Y {
             game.player2Y += playerSpeed
@@ -114,7 +132,7 @@ func updateGame() {
         }
     }
 
-    // Check scoring
+    // Check scoring/reset (same as before)
     if game.ballX+ballSize >= canvasWidth || game.ballX-ballSize <= 0 {
         initGame()  // Reset game
     }
@@ -122,13 +140,16 @@ func updateGame() {
 
 // Render the game UI
 func renderGame() {
+    // Clear the canvas
     ctx.Call("clearRect", 0, 0, canvasWidth, canvasHeight)
 
-    // Draw player paddles
-    ctx.Call("fillRect", 0, game.player1Y-paddleHeight/2, paddleWidth, paddleHeight)
+    // Draw player 1's paddle (with both X and Y)
+    ctx.Call("fillRect", game.player1X, game.player1Y-paddleHeight/2, paddleWidth, paddleHeight)
+
+    // Draw player 2's paddle (only Y)
     ctx.Call("fillRect", canvasWidth-paddleWidth, game.player2Y-paddleHeight/2, paddleWidth, paddleHeight)
 
-    // Draw ball
+    // Draw the ball
     ctx.Call("beginPath")
     ctx.Call("arc", game.ballX, game.ballY, ballSize, 0, 2*math.Pi)
     ctx.Call("fill")

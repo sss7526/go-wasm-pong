@@ -25,22 +25,25 @@
     <script>
         const go = new Go();
     
-        // Store key states for Arrow Keys (pressed or not)
-        window.keysPressed = {
-            ArrowUp: false,
-            ArrowDown: false
-        };
+        // Track keyPressed for ArrowUp, ArrowDown, ArrowLeft, ArrowRight
+    window.keysPressed = {
+        ArrowUp: false,
+        ArrowDown: false,
+        ArrowLeft: false,
+        ArrowRight: false
+    };
+
         // Capture keydown event
-        window.addEventListener("keydown", function (e) {
-            if (e.code === "ArrowUp" || e.code === "ArrowDown") {
-                keysPressed[e.code] = true;  // Mark key as pressed
+        window.addEventListener("keydown", function(e) {
+            if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.code)) {
+                window.keysPressed[e.code] = true;  // Mark key as pressed
             }
         });
-    
+
         // Capture keyup event
-        window.addEventListener("keyup", function (e) {
-            if (e.code === "ArrowUp" || e.code === "ArrowDown") {
-                keysPressed[e.code] = false;  // Mark key as released
+        window.addEventListener("keyup", function(e) {
+            if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.code)) {
+                window.keysPressed[e.code] = false;  // Mark key as released
             }
         });
     
