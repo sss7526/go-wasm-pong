@@ -42,8 +42,20 @@ var ctx js.Value
 func initGame() {
     game.ballX = canvasWidth / 2
     game.ballY = canvasHeight / 2
-    game.ballVelX = ballSpeed
-    game.ballVelY = ballSpeed
+
+    // Randomize the starting direction of the ball
+    angle := rand.Float64()*120 + 30 // Angle between 30 and 150 degrees
+    radAngle := angle * (math.Pi / 180.0) // Convert degrees to radians
+
+    // Set initial velocity based on the angle
+    game.ballVelX = ballSpeed * math.Cos(radAngle)  // X component of velocity
+    game.ballVelY = ballSpeed * math.Sin(radAngle)  // Y component of velocity
+
+    // Randomize whether the ball starts moving to the left or right
+    if rand.Float64() > 0.5 {
+        game.ballVelX = -game.ballVelX
+    }
+
     game.player1Y = canvasHeight / 2
     game.player2Y = canvasHeight / 2
 }
